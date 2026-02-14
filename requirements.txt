@@ -1,0 +1,5 @@
+Flask
+cryptography
+PyJWT
+pytest
+coverage
