@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, request
-from keys import KeyStore
 import base64
 import time
 import jwt
+
+from keys import KeyStore
 
 app = Flask(__name__)
 keystore = KeyStore()
@@ -18,19 +19,18 @@ def int_to_base64url(n: int) -> str:
 def jwks():
     keys = []
 
-    for key in keystore.unexpired_public():
-        pub = key.private_key.public_key()
-        numbers = pub.public_numbers()
+    for key_entry in keystore.get_unexpired_keys():
+        public_key = key_entry.private_key.public_key()
+        numbers = public_key.public_numbers()
 
         jwk = {
             "kty": "RSA",
             "use": "sig",
             "alg": "RS256",
-            "kid": key.kid,
+            "kid": str(key_entry.kid),
             "n": int_to_base64url(numbers.n),
             "e": int_to_base64url(numbers.e),
         }
-
         keys.append(jwk)
 
     return jsonify({"keys": keys}), 200
@@ -39,27 +39,30 @@ def jwks():
 @app.post("/auth")
 def auth():
     now = int(time.time())
-
     expired_flag = "expired" in request.args
 
     if expired_flag:
-        key = keystore.expired
-        exp_time = key.expires_at  # geçmişte
+        key_entry = keystore.get_expired_key()
+        if key_entry is None:
+            return {"error": "No expired key found"}, 500
+        exp_time = key_entry.expires_at
     else:
-        key = keystore.active
-        exp_time = now + 300  # 5 dakika
+        key_entry = keystore.get_valid_key()
+        if key_entry is None:
+            return {"error": "No valid key found"}, 500
+        exp_time = now + 300
 
     payload = {
         "sub": "fake-user",
         "iat": now,
-        "exp": exp_time
+        "exp": exp_time,
     }
 
     token = jwt.encode(
         payload,
-        key.private_key,
+        key_entry.private_key,
         algorithm="RS256",
-        headers={"kid": key.kid}
+        headers={"kid": str(key_entry.kid)},
     )
 
     return {"token": token}, 200
