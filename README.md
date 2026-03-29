@@ -1,97 +1,162 @@
-# Basic JWKS Server (Python + Flask)
+# 🔐 JWKS Server - Project 2 (SQLite-backed)
 
-## Overview
-
-This project implements a RESTful JWKS (JSON Web Key Set) server in Python using Flask.
-
-The server demonstrates:
-
-- RSA key pair generation
-- Unique `kid` assignment for each key
-- Key expiration handling
-- JWKS endpoint serving only unexpired public keys
-- JWT issuance signed with RS256
-- Expired token simulation via query parameter
-- Automated test suite with 99% coverage
-
-This project simulates a real-world authentication flow including key rotation behavior.
+This project extends a basic JWKS (JSON Web Key Set) server by adding **SQLite-based key storage**.
+Instead of keeping keys in memory, private keys are securely stored in a database and retrieved when needed.
 
 ---
 
-## Architecture
+## 🚀 Features
 
-- RSA private keys are generated at server startup.
-- Each key is assigned a unique `kid`.
-- The JWKS endpoint exposes only unexpired public keys.
-- JWTs include the `kid` in the header.
-- Tokens are signed using RS256.
-- Expired tokens simulate key rotation scenarios.
+* SQLite database for persistent key storage
+* Automatic generation of:
 
----
-
-## Endpoints
-
-### 1. JWKS Endpoint
-
-GET /.well-known/jwks.json
-
-Returns all active (unexpired) public keys in JWKS format.
+  * ✅ Valid (unexpired) RSA key
+  * ❌ Expired RSA key
+* JWT (JSON Web Token) generation
+* JWKS endpoint for public key distribution
+* Support for expired token testing (`?expired=true`)
+* SQL injection-safe queries using parameterized statements
+* Fully tested with pytest
 
 ---
 
-### 2. Authentication Endpoint
+## 📁 Project Structure
 
-POST /auth
-
-Returns a valid JWT signed with the active key.
+```
+jwks-server-project2/
+│
+├── app.py              # Flask server with endpoints
+├── keys.py             # SQLite key management
+├── tests/              # Test suite (pytest)
+├── screenshots/        # Required output screenshots
+├── requirements.txt    # Dependencies
+├── verify.py           # Verification script
+└── README.md
+```
 
 ---
 
-### 3. Expired Token Endpoint
+## ⚙️ Setup & Installation
 
-POST /auth?expired=true
-
-Returns a JWT signed with the expired key and an expiration timestamp in the past.
-
----
-
-## Running the Server
-
-Activate virtual environment:
+1. Clone the repository:
 
 ```bash
-.venv\Scripts\activate
+git clone https://github.com/esatsglm/jwks-server-project2.git
+cd jwks-server-project2
+```
 
+2. Install dependencies:
 
-Start server: python app.py
+```bash
+pip install -r requirements.txt
+```
 
-Server runs on: http://localhost:8080
+3. Run the server:
 
-Run tests:pytest
+```bash
+python app.py
+```
 
-Run coverage: coverage run -m pytest
-              coverage report -m
+---
 
-Current total coverage: 99%
+## 🌐 API Endpoints
 
+### 🔑 `POST /auth`
 
-Security Concepts Demonstrated
+Generates a JWT signed with a private key from the database.
 
- -RSA asymmetric cryptography
+* Default → uses **valid key**
+* With query:
 
- -JWT signing and verification
+```bash
+/auth?expired=true
+```
 
- -Key rotation principles
+→ uses **expired key**
 
- -JWKS standard implementation
+Example:
 
- -Expiration validation
+```bash
+curl -X POST http://127.0.0.1:8080/auth
+```
 
- -RESTful API design
+---
 
- -Automated testing and coverage analysis
+### 📡 `GET /.well-known/jwks.json`
 
-## Author
+Returns **only unexpired public keys** in JWKS format.
+
+Example:
+
+```bash
+curl http://127.0.0.1:8080/.well-known/jwks.json
+```
+
+---
+
+## 🗄️ Database
+
+* File: `totally_not_my_privateKeys.db`
+* Table schema:
+
+```sql
+CREATE TABLE keys(
+  kid INTEGER PRIMARY KEY AUTOINCREMENT,
+  key BLOB NOT NULL,
+  exp INTEGER NOT NULL
+);
+```
+
+* Keys are stored as **PEM-encoded private keys**
+* Expiration (`exp`) is stored as a Unix timestamp
+
+---
+
+## 🧪 Testing
+
+Run tests with:
+
+```bash
+python -m pytest -v
+```
+
+✔ All tests pass:
+
+* JWKS returns only valid keys
+* JWT is correctly signed
+* Expired token logic works
+
+---
+
+## 📸 Screenshots
+
+Screenshots included in `/screenshots`:
+
+* JWKS endpoint output
+* Test results (`pytest`)
+
+---
+
+## 🔒 Security Notes
+
+* Uses **parameterized SQL queries** to prevent SQL injection
+* Private keys are stored securely in database
+* Only **valid keys** are exposed via JWKS
+
+---
+
+## 📌 Summary
+
+This project demonstrates:
+
+* Secure key management with SQLite
+* JWT authentication flow
+* REST API design with Flask
+* Testing and validation of authentication systems
+
+---
+
+## 👨‍💻 Author
 
 **Esat  Kaan Saglam**  
 Cybersecurity Student – University of North Texas  
