@@ -164,3 +164,10 @@ Cybersecurity Student – University of North Texas
  
 LinkedIn: https://www.linkedin.com/in/esat-kaan-saglam/
 
+## Key Improvement Over Project 1
+
+- Keys are no longer stored in memory
+- Keys are persisted in a SQLite database
+- Keys survive server restarts
+- Secure SQL queries prevent injection attacks
+
